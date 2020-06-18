@@ -1,0 +1,51 @@
+#!/bin/bash
+
+api_key=NRS1NR2V34EVDKG3
+
+get_stock_price_by_symbol(){
+
+	symbol=$1
+	url="https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=$symbol&interval=5min&apikey=$api_key"
+	result=$(curl -s $url)
+	
+	last_refreshed=$(echo $result | jq '."Meta Data"."3. Last Refreshed"')
+
+	time_series=$(echo $result | jq '."Time Series (5min)"')
+
+	price_data=$(echo $time_series | jq  --arg keyvar "${last_refreshed//\"}" '.[$keyvar]')
+	
+	echo $price_data | jq '."4. close", ."2. high", ."3. low"' | \
+		while read -r close; do
+			read -r high
+			read -r low
+			echo "$symbol stats ($last_refreshed):"
+			echo "  Current: \$${close//\"}"
+			echo "  High   : \$${high//\"}"
+			echo "  Low    : \$${low//\"}"
+		done 
+}
+
+print_help() {
+	echo "Usage"
+	echo "Get price by symbol: stock -s <symbol>"
+	echo "Get price by name  : stock -n <company-name>"
+}
+
+while getopts ":s:n:" opt; do
+	case ${opt} in
+		s ) get_stock_price_by_symbol "$OPTARG"
+			;;
+		n ) echo "Get Stock by Name"
+			;;
+		\? ) print_help
+			;;
+		: ) print_help
+			;;
+	esac
+done
+
+if (($OPTIND == 1)); then 
+	get_stock_price_by_symbol $1
+fi
+
+

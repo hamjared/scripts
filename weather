@@ -1,0 +1,34 @@
+#!/bin/bash
+
+ip=$(curl -s https://ipinfo.io/ip)
+declare -a latLong
+
+mapfile -t latLong < <(curl -s --request GET --url "https://ipvigilante.com/$ip" | jq '.data.latitude, .data.longitude')
+
+lat=${latLong[0]//\"}
+long=${latLong[1]//\"}
+
+apiKey=1ee670f6f625062851ef5a24383c88c8
+
+
+curl -s --request GET \
+	--url "api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$long&units=imperial&appid=$apiKey" | \
+       	jq '.main.temp, .wind.speed, .wind.deg, .wind.gust, .name' | \
+	while read -r temp; do
+		read -r windSpeed
+		read -r windDirection
+		read -r windGust
+		read -r location
+		echo ${location//\"}
+		echo "Temperature: $temp F"
+		if [ "$windGust" = "null"  ];
+		then
+			echo "Wind $windSpeed mph @ $windDirection"
+		else
+
+			echo "Wind $windSpeed mph @ $windDirection degrees Gusting $windGust mph"
+		fi
+	done
+
+
+

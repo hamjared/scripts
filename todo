@@ -1,0 +1,59 @@
+#!/bin/bash
+
+todoListFileName=~/.todoList
+
+if test ! -f $todoListFileName; then
+	touch $todoListFileName
+fi
+
+add_task() {
+	task=$1
+	echo "$task" >> $todoListFileName
+	echo "Successfully added new task"
+}
+
+remove_task() {
+	taskNumber=$1
+	sed -i "${taskNumber}d" $todoListFileName
+	echo "Removed task #$taskNumber"
+}
+
+clear_all_tasks(){
+	rm $todoListFileName
+}
+
+print_tasks() {
+	numTasks=$(wc -l <  $todoListFileName)
+	if (($numTasks > 0)); then 
+		cat -n $todoListFileName
+	else
+		echo "Nothing in Todo List!"
+	fi
+}
+
+print_help(){
+	echo "Usage"
+	echo "Add task       : todo -a <task description>"
+	echo "Remove task    : todo -r <task-number>"
+	echo "Clear Task List: todo -c"
+}
+
+while getopts ":a:r:c" opt; do
+	case ${opt} in
+		a ) add_task "$OPTARG"
+			;;
+		r ) remove_task $OPTARG
+			;;
+		c ) clear_all_tasks
+			;;
+		\? ) print_help
+			;;
+		: ) print_help
+			;;
+	esac
+done
+
+if (($OPTIND == 1)); then
+	print_tasks
+fi	
+
